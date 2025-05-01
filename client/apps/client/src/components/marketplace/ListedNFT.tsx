@@ -49,20 +49,21 @@ export const ListedNFT = () => {
 
       const receipt = await tx.wait();
       if (receipt.status === 0) {
-        console.error("Giao dịch bị revert");
+        console.error("revert transaction");
       } else {
-        console.log("Giao dịch thành công");
+        console.log("transaction success");
       }
 
       const buyerBalanceAfter = await provider.getBalance(signer.getAddress());
       console.log("Buyer balance after transaction:", ethers.formatEther(buyerBalanceAfter));
 
-
       setListingNFT(selectedNFT)
+
+      setSelectedNFT(null) // to close modal
 
     } catch (err) {
       console.error(err)
-      alert("Lỗi khi mua NFT")
+      alert("Error while buying NFT")
     }
   }
 
