@@ -17,7 +17,7 @@ export const useContract = (contractAddress: string) => {
   return useMemo(() => {
     if (!walletClient) return null
 
-    const ethersProvider = new ethers.BrowserProvider(walletClient.transport);
+    const ethersProvider = new ethers.BrowserProvider(window.ethereum);
 
     return TrainingNFT__factory.connect(contractAddress as `0x${string}`, ethersProvider as any)
   }, [walletClient, contractAddress])
@@ -132,6 +132,7 @@ export interface ListedNFT {
   price: string
   name: string;
   seller: string;
+  isActive: boolean
 }
 
 export const useListNFT = () => {
@@ -146,6 +147,9 @@ export const useListNFT = () => {
       const contract = MarketPlace__factory.connect(CONTRACT_ADDRESSES.MARKETPLACE_ADDRESS as `0x${string}`, provider as any)
 
       const result = await contract.getListingByPage(pageParam * 10, 10)
+      console.log("🚀 ~ useListNFT: ~ pageParam:", pageParam)
+      console.log("🚀 ~ useListNFT: ~ result:", result)
+
       return result.filter((item) => item.isActive).map((item) => ({
         id: `${item.nftAddress}-${item.tokenId}`,
         contractAddress: item.nftAddress,
@@ -153,6 +157,7 @@ export const useListNFT = () => {
         price: item.price.toString(),
         name: `NFT #${item.tokenId.toString()}`,
         seller: item.seller,
+        isActive: item.isActive,
       }))
     },
     getNextPageParam: (lastPage, pages) => {
