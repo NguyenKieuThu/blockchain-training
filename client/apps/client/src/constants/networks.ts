@@ -10,7 +10,7 @@ export const NETWORKS: { [key: number]: Network } = {
   11155111: {
     chainId: 11155111,
     name: 'Sepolia',
-    rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
+    rpcUrl: 'http://127.0.0.1:8545/', //'https://ethereum-sepolia-rpc.publicnode.com',
     symbol: 'ETH',
     blockExplorer: 'https://sepolia.etherscan.io'
   },

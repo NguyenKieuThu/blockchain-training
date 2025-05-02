@@ -12,7 +12,7 @@ contract MyToken is ERC20, Ownable, ERC20Permit {
         Ownable(initialOwner)
         ERC20Permit("MyToken")
     {
-        _mint(msg.sender, 1000000000000000000000);
+        // _mint(msg.sender, 1000000000000000000000);
     }
 
     function mint(address to, uint256 amount) public onlyOwner {

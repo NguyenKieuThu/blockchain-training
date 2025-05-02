@@ -7,6 +7,7 @@ import { NFTCard } from "../ui/NFTCard"
 import { Spinner } from "./spinner"
 import { CONTRACT_ADDRESSES } from "../../constants/env"
 import { MarketPlace__factory } from "../../../../../library/typechain/src/factories/contracts/MarketPlace__factory"
+import { MyToken__factory } from "../../../../../library/typechain/src/factories/contracts/Erc20.sol"
 
 declare global {
   interface Window {
@@ -33,19 +34,36 @@ export const ListedNFT = () => {
         signer
       );
 
-      console.log("Selected NFT:", selectedNFT)
-      console.log("Contract address:", contract.address)
-      console.log("Signer address:", signer.getAddress())
-      console.log("Selected NFT price:", selectedNFT?.price)
-      const buyerBalanceBefore = await provider.getBalance(signer.getAddress());
-      console.log("Buyer balance before transaction:", ethers.formatEther(buyerBalanceBefore));
+      let tx;
 
-      const tx = await contract.buyListing(
-        selectedNFT?.contractAddress!,
-        selectedNFT?.tokenId!,
-        { value: selectedNFT?.price! }
-      )
-      console.log("Transaction hash buy:", tx.hash)
+      if (selectedNFT?.paymentToken === ethers.ZeroAddress) {
+        tx = await contract.buyListing(
+          selectedNFT.contractAddress,
+          selectedNFT.tokenId,
+          { value: selectedNFT.price }
+        );
+      } else if (selectedNFT?.paymentToken === CONTRACT_ADDRESSES.MY_TOKEN_ADDRESS) {
+        // approve the marketplace can spend the buyer's token
+        const contractToken = new ethers.Contract(
+          CONTRACT_ADDRESSES.MY_TOKEN_ADDRESS as `0x${string}`,
+          MyToken__factory.abi,
+          signer
+        );
+        const approveTx = await contractToken.approve(
+          CONTRACT_ADDRESSES.MARKETPLACE_ADDRESS,
+          selectedNFT.price
+        );
+        await approveTx.wait();
+
+        tx = await contract.buyListingWithERC20(
+          selectedNFT.contractAddress,
+          selectedNFT.tokenId
+        );
+      }
+      else {
+        console.error("Unknown payment token:", selectedNFT?.paymentToken);
+        return;
+      }
 
       const receipt = await tx.wait();
       if (receipt.status === 0) {
@@ -53,9 +71,6 @@ export const ListedNFT = () => {
       } else {
         console.log("transaction success");
       }
-
-      const buyerBalanceAfter = await provider.getBalance(signer.getAddress());
-      console.log("Buyer balance after transaction:", ethers.formatEther(buyerBalanceAfter));
 
       setListingNFT(selectedNFT)
 
@@ -82,6 +97,7 @@ export const ListedNFT = () => {
                   nftAddress={item.contractAddress}
                   seller={item.seller}
                   price={BigInt(item.price)}
+                  displayCurrency={item.displayCurrency}
                   actionLabel={item.seller === address ? "Cancel" : "Buy"}
                   onAction={() => setSelectedNFT(item)}
                 />
@@ -97,6 +113,7 @@ export const ListedNFT = () => {
           onConfirm={() => handleBuyNFT()}
           tokenId={selectedNFT.tokenId}
           price={BigInt(selectedNFT.price)}
+          displayCurrency={selectedNFT.displayCurrency}
           seller={selectedNFT.seller}
         />
       )}

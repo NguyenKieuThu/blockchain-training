@@ -3,6 +3,7 @@
 pragma solidity ^0.8.27;
 
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract MarketPlace  {
     struct Listing {
@@ -11,9 +12,10 @@ contract MarketPlace  {
         address seller;
         uint256 price;
         bool isActive;
+        address paymentToken;
     }
 
-    event NewListing(address indexed nftAddress, uint256 indexed tokenId, address indexed seller, uint256 price);
+    event NewListing(address indexed nftAddress, uint256 indexed tokenId, address indexed seller, uint256 price, address paymentToken);
     event ListingCancelled(address indexed nftAddress, uint256 indexed tokenId, address indexed seller);
     event BuyListing(address indexed nftAddress, uint256 indexed tokenId, address indexed seller, uint256 price);
 
@@ -30,18 +32,18 @@ contract MarketPlace  {
         locked = false;
     }
 
-    function list(address nftAddress, uint256 tokenId, uint256 price) public {
+    function list(address nftAddress, uint256 tokenId, uint256 price, address paymentToken) public {
         require(IERC721(nftAddress).ownerOf(tokenId) == msg.sender, "You are not the owner of the token");
         require(IERC721(nftAddress).isApprovedForAll(msg.sender, address(this)) || IERC721(nftAddress).getApproved(tokenId) == address(this), "You must approve the marketplace to transfer the token");
 
         IERC721(nftAddress).transferFrom(msg.sender, address(this), tokenId);
-        Listing memory listing = Listing({nftAddress: nftAddress, tokenId: tokenId, seller: msg.sender, price: price, isActive: true});
+        Listing memory listing = Listing({nftAddress: nftAddress, tokenId: tokenId, seller: msg.sender, price: price, isActive: true, paymentToken: paymentToken});
         listings.push(listing);
 
         _listMaps[nftAddress][tokenId] = listings.length - 1;
         activeListingIndexes.push(listings.length - 1);
         _activeIndexPositions[listings.length - 1] = activeListingIndexes.length - 1;
-        emit NewListing(nftAddress, tokenId, msg.sender, price);
+        emit NewListing(nftAddress, tokenId, msg.sender, price, paymentToken);
     }
 
     function cancelListing(address nftAddress, uint256 tokenId) public {
@@ -79,20 +81,43 @@ contract MarketPlace  {
         uint256 index = _listMaps[nftAddress][tokenId];
         Listing storage listing = listings[index];
         require(listing.isActive, "This listing is not active");
-        require(msg.value >= listing.price, "Insufficient funds sent");
-        require(IERC721(nftAddress).ownerOf(tokenId) != msg.sender, "You cannot buy your own NFT");
+        require(msg.value == listing.price, "You must send the exact price");
+        require(listing.seller != msg.sender, "You cannot buy your own NFT");
 
         listing.isActive = false;
         _removeActiveIndex(index);
 
+        // Transfer the funds to the seller
+        (bool success, ) = listing.seller.call{value: listing.price}("");
+        require(success, "Transfer to seller failed");
+
+        // Transfer the NFT to the buyer
+        IERC721(nftAddress).transferFrom(address(this), msg.sender, tokenId);
+        
+        emit BuyListing(nftAddress, tokenId, msg.sender, listing.price);
+    }
+
+    function buyListingWithERC20(address nftAddress, uint256 tokenId) external nonReentrant{
+        uint256 index = _listMaps[nftAddress][tokenId];
+        Listing storage listing = listings[index];
+        require(listing.isActive, "This listing is not active");
+        require(listing.seller != msg.sender, "You cannot buy your own NFT");
+
+        IERC20 token = IERC20(listing.paymentToken);
+        require(token.balanceOf(msg.sender) >= listing.price, "Insufficient token balance");
+
+        listing.isActive = false;
+        _removeActiveIndex(index);
+
+        // Transfer the ERC20 token to the seller
+        bool success = token.transferFrom(msg.sender, listing.seller, listing.price);
+        require(success, "Token transfer failed");
+
         // Transfer the NFT to the buyer
         IERC721(nftAddress).transferFrom(address(this), msg.sender, tokenId);
 
-        // Transfer the funds to the seller
-        (bool success, ) = listing.seller.call{value: msg.value}("");
-        require(success, "Transfer to seller failed");
-        
-        emit BuyListing(nftAddress, tokenId, msg.sender, 0);
+        emit BuyListing(nftAddress, tokenId, msg.sender, listing.price);
+
     }
 
     function _removeActiveIndex(uint256 index) private {

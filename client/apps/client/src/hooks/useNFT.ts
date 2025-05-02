@@ -100,7 +100,7 @@ export const useApprove = (contractAddress: string, tokenId: string) => {
   })
 }
 
-export const useMutateListNFT = (contractAddress: string, tokenId: string) => {
+export const useMutateListNFT = (contractAddress: string, tokenId: string, selectedAddress: 'ETH' | 'MTK') => {
   const { data: walletClient } = useWalletClient()
   const publicClient = usePublicClient()
   const queryClient = useQueryClient()
@@ -108,10 +108,12 @@ export const useMutateListNFT = (contractAddress: string, tokenId: string) => {
     mutationFn: async (price: string) => {
       if (!walletClient || !publicClient) return false
       const contract = MarketPlace__factory.connect(CONTRACT_ADDRESSES.MARKETPLACE_ADDRESS as `0x${string}`)
+      
+      const paymentAddress = selectedAddress === 'ETH' ? ethers.ZeroAddress : CONTRACT_ADDRESSES.MY_TOKEN_ADDRESS
 
       const tx = await walletClient.sendTransaction({
         to: CONTRACT_ADDRESSES.MARKETPLACE_ADDRESS as `0x${string}`,
-        data: contract.interface.encodeFunctionData('list', [contractAddress, tokenId, ethers.parseEther(price)]) as `0x${string}`,
+        data: contract.interface.encodeFunctionData('list', [contractAddress, tokenId, ethers.parseEther(price), paymentAddress]) as `0x${string}`,
       })
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash: tx })
@@ -132,7 +134,9 @@ export interface ListedNFT {
   price: string
   name: string;
   seller: string;
-  isActive: boolean
+  isActive: boolean;
+  paymentToken: string;
+  displayCurrency: string;
 }
 
 export const useListNFT = () => {
@@ -143,30 +147,39 @@ export const useListNFT = () => {
     queryFn: async ({ pageParam = 0 }) => {
       if (!walletClient) return []
 
-      const provider = new ethers.BrowserProvider(walletClient.transport)
+      const provider = new ethers.BrowserProvider(window.ethereum)
+
+      console.log("Connected network:", await provider.getNetwork());
+      console.log("Marketplace address:", CONTRACT_ADDRESSES.MARKETPLACE_ADDRESS);
+
       const contract = MarketPlace__factory.connect(CONTRACT_ADDRESSES.MARKETPLACE_ADDRESS as `0x${string}`, provider as any)
 
       const result = await contract.getListingByPage(pageParam * 10, 10)
-      console.log("🚀 ~ useListNFT: ~ pageParam:", pageParam)
-      console.log("🚀 ~ useListNFT: ~ result:", result)
 
-      return result.filter((item) => item.isActive).map((item) => ({
-        id: `${item.nftAddress}-${item.tokenId}`,
-        contractAddress: item.nftAddress,
-        tokenId: item.tokenId.toString(),
-        price: item.price.toString(),
-        name: `NFT #${item.tokenId.toString()}`,
-        seller: item.seller,
-        isActive: item.isActive,
-      }))
+      return result.filter((item) => item.isActive).map((item) => {
+        const isNative = item.paymentToken === ethers.ZeroAddress
+        const price = item.price.toString()
+
+        return {
+          id: `${item.nftAddress}-${item.tokenId}`,
+          contractAddress: item.nftAddress,
+          tokenId: item.tokenId.toString(),
+          price,
+          name: `NFT #${item.tokenId.toString()}`,
+          seller: item.seller,
+          isActive: item.isActive,
+          paymentToken: item.paymentToken,
+          displayCurrency: isNative ? 'ETH' : 'MTK',
+        }
+      })
     },
     getNextPageParam: (lastPage, pages) => {
       return lastPage.length > 0 ? pages.length + 1 : undefined
     },
     enabled: !!walletClient,
     initialPageParam: 0,
-    gcTime: 30_000,
-    staleTime: 30_000,
+    gcTime: 0,
+    staleTime: 0,
     refetchInterval: 3000,
   })
 }

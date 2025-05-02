@@ -15,8 +15,10 @@ export function ListNFTModal({
 }: ListNFTModalProps) {
   const [price, setPrice] = useState('')
   const { data: isApproved, isLoading: isApprovedLoading } = useIsApproved(nft.contractAddress, nft.tokenId)
-  const { mutateAsync: listNFT, isPending: isListing } = useMutateListNFT(nft.contractAddress, nft.tokenId)
+  const [paymentToken, setPaymentToken] = useState<'ETH' | 'MTK'>('ETH')
+  const { mutateAsync: listNFT, isPending: isListing } = useMutateListNFT(nft.contractAddress, nft.tokenId, paymentToken)
   const { mutateAsync: approve, isPending: isApproving } = useApprove(nft.contractAddress, nft.tokenId)
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -85,6 +87,17 @@ export function ListNFTModal({
                     </div>
                   </div>
 
+                  {/* Payment Token Selection */}
+                  <select
+                    id="paymentToken"
+                    value={paymentToken}
+                    onChange={(e) => setPaymentToken(e.target.value as 'ETH' | 'MTK')}
+                    className="block w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-xl text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="ETH">ETH</option>
+                    <option value="MTK">MTK</option>
+                  </select>
+
                   {/* Price Input */}
                   <div>
                     <label htmlFor="price" className="block text-lg font-semibold text-gray-900 mb-3">
@@ -101,7 +114,7 @@ export function ListNFTModal({
                         required
                       />
                       <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
-                        <span className="text-lg font-medium text-gray-500">ETH</span>
+                        <span className="text-lg font-medium text-gray-500">{paymentToken}</span>
                       </div>
                     </div>
                   </div>

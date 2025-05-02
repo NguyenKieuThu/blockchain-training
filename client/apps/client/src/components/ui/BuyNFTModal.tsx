@@ -7,7 +7,8 @@ interface BuyNFTModalProps {
   onClose: () => void
   onConfirm: () => void
   tokenId: string
-  price: bigint
+  price: bigint,
+  displayCurrency: string
   seller: string
 }
 
@@ -17,6 +18,7 @@ export function BuyNFTModal({
   onConfirm,
   tokenId,
   price,
+  displayCurrency,
   seller,
 }: BuyNFTModalProps) {
   return (
@@ -57,7 +59,7 @@ export function BuyNFTModal({
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <p className="text-sm text-gray-600">Token ID: {tokenId}</p>
                     <p className="text-lg font-medium text-gray-900">
-                      Price: {formatEther(price)} ETH
+                      Price: {formatEther(price)} {displayCurrency}
                     </p>
                     <p className="text-sm text-gray-500">
                       Seller: {seller.slice(0, 6)}...{seller.slice(-4)}

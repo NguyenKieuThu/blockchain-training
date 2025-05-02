@@ -9,6 +9,7 @@ interface NFTCardProps {
   name?: string
   nftAddress?: string
   price?: bigint
+  displayCurrency?: string
   seller?: string
   onAction?: () => void
   actionLabel?: string
@@ -19,6 +20,7 @@ export function NFTCard({
   name = `NFT #${tokenId}`,
   nftAddress,
   price,
+  displayCurrency,
   seller,
   onAction,
   actionLabel,
@@ -49,7 +51,7 @@ export function NFTCard({
           <p className="text-sm text-gray-600">Token ID: {tokenId}</p>
           {formattedPrice && (
             <p className="text-lg font-medium text-gray-900">
-              {formattedPrice} ETH
+              {formattedPrice} {displayCurrency}
             </p>
           )}
           {seller && (

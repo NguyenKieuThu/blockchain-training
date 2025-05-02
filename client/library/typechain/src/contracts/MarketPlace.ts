@@ -30,6 +30,7 @@ export declare namespace MarketPlace {
     seller: AddressLike;
     price: BigNumberish;
     isActive: boolean;
+    paymentToken: AddressLike;
   };
 
   export type ListingStructOutput = [
@@ -37,25 +38,41 @@ export declare namespace MarketPlace {
     tokenId: bigint,
     seller: string,
     price: bigint,
-    isActive: boolean
+    isActive: boolean,
+    paymentToken: string
   ] & {
     nftAddress: string;
     tokenId: bigint;
     seller: string;
     price: bigint;
     isActive: boolean;
+    paymentToken: string;
   };
 }
 
 export interface MarketPlaceInterface extends Interface {
   getFunction(
-    nameOrSignature: "cancelListing" | "getListingByPage" | "list" | "listings"
+    nameOrSignature:
+      | "buyListing"
+      | "buyListingWithERC20"
+      | "cancelListing"
+      | "getListingByPage"
+      | "list"
+      | "listings"
   ): FunctionFragment;
 
   getEvent(
-    nameOrSignatureOrTopic: "ListingCancelled" | "NewListing"
+    nameOrSignatureOrTopic: "BuyListing" | "ListingCancelled" | "NewListing"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "buyListing",
+    values: [AddressLike, BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "buyListingWithERC20",
+    values: [AddressLike, BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "cancelListing",
     values: [AddressLike, BigNumberish]
@@ -66,13 +83,18 @@ export interface MarketPlaceInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "list",
-    values: [AddressLike, BigNumberish, BigNumberish]
+    values: [AddressLike, BigNumberish, BigNumberish, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "listings",
     values: [BigNumberish]
   ): string;
 
+  decodeFunctionResult(functionFragment: "buyListing", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "buyListingWithERC20",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "cancelListing",
     data: BytesLike
@@ -83,6 +105,31 @@ export interface MarketPlaceInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "list", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "listings", data: BytesLike): Result;
+}
+
+export namespace BuyListingEvent {
+  export type InputTuple = [
+    nftAddress: AddressLike,
+    tokenId: BigNumberish,
+    seller: AddressLike,
+    price: BigNumberish
+  ];
+  export type OutputTuple = [
+    nftAddress: string,
+    tokenId: bigint,
+    seller: string,
+    price: bigint
+  ];
+  export interface OutputObject {
+    nftAddress: string;
+    tokenId: bigint;
+    seller: string;
+    price: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace ListingCancelledEvent {
@@ -112,19 +159,22 @@ export namespace NewListingEvent {
     nftAddress: AddressLike,
     tokenId: BigNumberish,
     seller: AddressLike,
-    price: BigNumberish
+    price: BigNumberish,
+    paymentToken: AddressLike
   ];
   export type OutputTuple = [
     nftAddress: string,
     tokenId: bigint,
     seller: string,
-    price: bigint
+    price: bigint,
+    paymentToken: string
   ];
   export interface OutputObject {
     nftAddress: string;
     tokenId: bigint;
     seller: string;
     price: bigint;
+    paymentToken: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -175,6 +225,18 @@ export interface MarketPlace extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  buyListing: TypedContractMethod<
+    [nftAddress: AddressLike, tokenId: BigNumberish],
+    [void],
+    "payable"
+  >;
+
+  buyListingWithERC20: TypedContractMethod<
+    [nftAddress: AddressLike, tokenId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   cancelListing: TypedContractMethod<
     [nftAddress: AddressLike, tokenId: BigNumberish],
     [void],
@@ -188,7 +250,12 @@ export interface MarketPlace extends BaseContract {
   >;
 
   list: TypedContractMethod<
-    [nftAddress: AddressLike, tokenId: BigNumberish, price: BigNumberish],
+    [
+      nftAddress: AddressLike,
+      tokenId: BigNumberish,
+      price: BigNumberish,
+      paymentToken: AddressLike
+    ],
     [void],
     "nonpayable"
   >;
@@ -196,12 +263,13 @@ export interface MarketPlace extends BaseContract {
   listings: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, bigint, string, bigint, boolean] & {
+      [string, bigint, string, bigint, boolean, string] & {
         nftAddress: string;
         tokenId: bigint;
         seller: string;
         price: bigint;
         isActive: boolean;
+        paymentToken: string;
       }
     ],
     "view"
@@ -211,6 +279,20 @@ export interface MarketPlace extends BaseContract {
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "buyListing"
+  ): TypedContractMethod<
+    [nftAddress: AddressLike, tokenId: BigNumberish],
+    [void],
+    "payable"
+  >;
+  getFunction(
+    nameOrSignature: "buyListingWithERC20"
+  ): TypedContractMethod<
+    [nftAddress: AddressLike, tokenId: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "cancelListing"
   ): TypedContractMethod<
@@ -228,7 +310,12 @@ export interface MarketPlace extends BaseContract {
   getFunction(
     nameOrSignature: "list"
   ): TypedContractMethod<
-    [nftAddress: AddressLike, tokenId: BigNumberish, price: BigNumberish],
+    [
+      nftAddress: AddressLike,
+      tokenId: BigNumberish,
+      price: BigNumberish,
+      paymentToken: AddressLike
+    ],
     [void],
     "nonpayable"
   >;
@@ -237,17 +324,25 @@ export interface MarketPlace extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, bigint, string, bigint, boolean] & {
+      [string, bigint, string, bigint, boolean, string] & {
         nftAddress: string;
         tokenId: bigint;
         seller: string;
         price: bigint;
         isActive: boolean;
+        paymentToken: string;
       }
     ],
     "view"
   >;
 
+  getEvent(
+    key: "BuyListing"
+  ): TypedContractEvent<
+    BuyListingEvent.InputTuple,
+    BuyListingEvent.OutputTuple,
+    BuyListingEvent.OutputObject
+  >;
   getEvent(
     key: "ListingCancelled"
   ): TypedContractEvent<
@@ -264,6 +359,17 @@ export interface MarketPlace extends BaseContract {
   >;
 
   filters: {
+    "BuyListing(address,uint256,address,uint256)": TypedContractEvent<
+      BuyListingEvent.InputTuple,
+      BuyListingEvent.OutputTuple,
+      BuyListingEvent.OutputObject
+    >;
+    BuyListing: TypedContractEvent<
+      BuyListingEvent.InputTuple,
+      BuyListingEvent.OutputTuple,
+      BuyListingEvent.OutputObject
+    >;
+
     "ListingCancelled(address,uint256,address)": TypedContractEvent<
       ListingCancelledEvent.InputTuple,
       ListingCancelledEvent.OutputTuple,
@@ -275,7 +381,7 @@ export interface MarketPlace extends BaseContract {
       ListingCancelledEvent.OutputObject
     >;
 
-    "NewListing(address,uint256,address,uint256)": TypedContractEvent<
+    "NewListing(address,uint256,address,uint256,address)": TypedContractEvent<
       NewListingEvent.InputTuple,
       NewListingEvent.OutputTuple,
       NewListingEvent.OutputObject
