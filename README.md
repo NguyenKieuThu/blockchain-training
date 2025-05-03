@@ -17,13 +17,3 @@
     for address 0x70997970C51812dc3A010C7d01b50e0d17dc79C8
 
 After buying an NFT, the buyer can list it for sale to make a profit. At that point, they take on the role of the seller
-
-# Q&A
-Sau khi buyer đã mua NFTs với ERC20 token, thì em list những NFT họ đang có để bán. Nhưng hay bị xuất hiện pop up yêu cầu confirm như sau ạ:
-![alt text](image.png)
-
-Phải confirm yêu cầu này vài lần thì em mới list được NFT hiện tại.
-
-Trong code cũng chỉ có 1 đoạn lúc mua NFT với ERC20 là cần approve từ buyer đến MarketPlace có thể chuyển tiền từ buyer đến seller.
-
-Em cũng thử tìm hiểu để fix lỗi này mà vẫn chưa được ạ. Nên em hỏi anh Trọng và Khánh Châu luôn ạ.
