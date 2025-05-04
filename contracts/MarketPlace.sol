@@ -17,7 +17,7 @@ contract MarketPlace  {
 
     event NewListing(address indexed nftAddress, uint256 indexed tokenId, address indexed seller, uint256 price, address paymentToken);
     event ListingCancelled(address indexed nftAddress, uint256 indexed tokenId, address indexed seller);
-    event BuyListing(address indexed nftAddress, uint256 indexed tokenId, address indexed seller, uint256 price);
+    event BuyListing(address indexed nftAddress, uint256 indexed tokenId, address indexed seller, uint256 price, address paymentToken);
 
     mapping(address => mapping(uint256 => uint256)) private _listMaps;
     Listing[] public listings;
@@ -94,7 +94,7 @@ contract MarketPlace  {
         // Transfer the NFT to the buyer
         IERC721(nftAddress).transferFrom(address(this), msg.sender, tokenId);
         
-        emit BuyListing(nftAddress, tokenId, msg.sender, listing.price);
+        emit BuyListing(nftAddress, tokenId, msg.sender, listing.price, listing.paymentToken);
     }
 
     function buyListingWithERC20(address nftAddress, uint256 tokenId) external nonReentrant{
@@ -116,7 +116,7 @@ contract MarketPlace  {
         // Transfer the NFT to the buyer
         IERC721(nftAddress).transferFrom(address(this), msg.sender, tokenId);
 
-        emit BuyListing(nftAddress, tokenId, msg.sender, listing.price);
+        emit BuyListing(nftAddress, tokenId, msg.sender, listing.price, listing.paymentToken);
 
     }
 

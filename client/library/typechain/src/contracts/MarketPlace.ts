@@ -112,19 +112,22 @@ export namespace BuyListingEvent {
     nftAddress: AddressLike,
     tokenId: BigNumberish,
     seller: AddressLike,
-    price: BigNumberish
+    price: BigNumberish,
+    paymentToken: AddressLike
   ];
   export type OutputTuple = [
     nftAddress: string,
     tokenId: bigint,
     seller: string,
-    price: bigint
+    price: bigint,
+    paymentToken: string
   ];
   export interface OutputObject {
     nftAddress: string;
     tokenId: bigint;
     seller: string;
     price: bigint;
+    paymentToken: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -359,7 +362,7 @@ export interface MarketPlace extends BaseContract {
   >;
 
   filters: {
-    "BuyListing(address,uint256,address,uint256)": TypedContractEvent<
+    "BuyListing(address,uint256,address,uint256,address)": TypedContractEvent<
       BuyListingEvent.InputTuple,
       BuyListingEvent.OutputTuple,
       BuyListingEvent.OutputObject
